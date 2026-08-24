@@ -14,6 +14,9 @@ import {
   ArrowLeft,
   XCircle,
   HelpCircle,
+  FileDown,
+  Video,
+  Printer,
 } from 'lucide-react';
 import { appointmentApi, calendarApi } from '../../api';
 import StatusBadge from '../../components/ui/StatusBadge';
@@ -113,6 +116,13 @@ const AppointmentDetail: React.FC = () => {
         <div className="flex items-center gap-2">
           {appt.status === 'CONFIRMED' && (
             <>
+              <Link
+                to={`/telehealth/${appt.id}`}
+                className="btn-primary btn-sm gap-1.5 text-xs shadow-sm bg-emerald-600 hover:bg-emerald-700"
+              >
+                <Video className="w-3.5 h-3.5" />
+                <span>Join Telehealth Room</span>
+              </Link>
               <button
                 onClick={() => setRescheduleModalOpen(true)}
                 className="btn-outline btn-sm text-xs"
@@ -275,9 +285,19 @@ const AppointmentDetail: React.FC = () => {
           {/* Prescriptions */}
           {appt.prescription && (
             <div className="card space-y-4">
-              <div className="flex items-center gap-2 text-sm font-bold text-foreground">
-                <Pill className="w-4 h-4 text-primary" />
-                <span>Prescribed Medications</span>
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-2 text-sm font-bold text-foreground">
+                  <Pill className="w-4 h-4 text-primary" />
+                  <span>Prescribed Medications</span>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => window.print()}
+                  className="btn-outline btn-sm gap-1.5 text-xs print:hidden"
+                >
+                  <Printer className="w-3.5 h-3.5" />
+                  <span>Print Prescription</span>
+                </button>
               </div>
 
               <div className="table-wrapper">

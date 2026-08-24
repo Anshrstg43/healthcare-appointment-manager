@@ -39,6 +39,7 @@ const AdminDoctorCreate   = lazy(() => import('../pages/admin/AdminDoctorCreate'
 const AdminDoctorEdit     = lazy(() => import('../pages/admin/AdminDoctorEdit'));
 const AdminAppointments   = lazy(() => import('../pages/admin/AdminAppointments'));
 const AdminLeave          = lazy(() => import('../pages/admin/AdminLeave'));
+const TelehealthRoom      = lazy(() => import('../pages/shared/TelehealthRoom'));
 
 const PageLoader = () => (
   <div className="min-h-screen flex items-center justify-center bg-background">
@@ -109,6 +110,11 @@ const AppRouter: React.FC = () => {
               <Route path="/admin/appointments"             element={<AdminAppointments />} />
               <Route path="/admin/leave"                    element={<AdminLeave />} />
             </Route>
+          </Route>
+
+          {/* ─── Telehealth Virtual Consultation Room ───────────── */}
+          <Route element={<ProtectedRoute allowedRoles={['PATIENT', 'DOCTOR', 'ADMIN']} />}>
+            <Route path="/telehealth/:appointmentId" element={<TelehealthRoom />} />
           </Route>
 
           {/* ─── Fallback ───────────────────────────────────────── */}

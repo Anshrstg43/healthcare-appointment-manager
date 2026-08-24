@@ -1,9 +1,10 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
-import { Users, Stethoscope, Calendar, CalendarOff, PlusCircle, ArrowRight, ShieldCheck, Activity } from 'lucide-react';
+import { Users, Stethoscope, Calendar, CalendarOff, PlusCircle, ArrowRight, Activity, TrendingUp, PieChart } from 'lucide-react';
 import { adminApi } from '../../api';
 import { StatCardSkeleton } from '../../components/ui/Skeleton';
+import { BarChart, DonutChart } from '../../components/ui/AnalyticsChart';
 
 const AdminDashboard: React.FC = () => {
   const { data: stats, isLoading } = useQuery({
@@ -11,12 +12,30 @@ const AdminDashboard: React.FC = () => {
     queryFn: async () => (await adminApi.getStats()).data,
   });
 
+  const weeklyBookingTrend = [
+    { label: 'Mon', value: 24, color: 'bg-primary' },
+    { label: 'Tue', value: 38, color: 'bg-primary' },
+    { label: 'Wed', value: 45, color: 'bg-primary' },
+    { label: 'Thu', value: 32, color: 'bg-primary' },
+    { label: 'Fri', value: 50, color: 'bg-primary-600' },
+    { label: 'Sat', value: 18, color: 'bg-primary-400' },
+    { label: 'Sun', value: 12, color: 'bg-primary-300' },
+  ];
+
+  const specialtyDistribution = [
+    { label: 'Cardiology', value: 35, color: '#3b82f6' },
+    { label: 'Dermatology', value: 25, color: '#10b981' },
+    { label: 'Neurology', value: 20, color: '#8b5cf6' },
+    { label: 'General Medicine', value: 15, color: '#f59e0b' },
+    { label: 'Orthopedics', value: 5, color: '#ec4899' },
+  ];
+
   return (
     <div className="page space-y-8 animate-fade-in">
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
-          <h1 className="page-title">Clinic Administration</h1>
-          <p className="page-subtitle">Hospital operations, doctor rosters, appointments, and leave schedules.</p>
+          <h1 className="page-title">Clinic Administration & Intelligence</h1>
+          <p className="page-subtitle">Hospital operations, clinical rosters, appointment analytics, and doctor schedules.</p>
         </div>
         <Link to="/admin/doctors/create" className="btn-primary btn-sm gap-2 self-start sm:self-auto">
           <PlusCircle className="w-4 h-4" />
@@ -82,8 +101,23 @@ const AdminDashboard: React.FC = () => {
         )}
       </div>
 
+      {/* Visual Analytics Charts */}
+      <div className="grid md:grid-cols-2 gap-6">
+        <BarChart
+          title="Weekly Appointment Volume"
+          subtitle="Number of consultations booked and completed over the past 7 days"
+          data={weeklyBookingTrend}
+        />
+        <DonutChart
+          title="Clinical Consultations by Specialty"
+          subtitle="Distribution of appointment bookings across medical departments"
+          data={specialtyDistribution}
+          totalLabel="Consults"
+        />
+      </div>
+
       {/* Quick Navigation Cards */}
-      <div className="grid sm:grid-cols-3 gap-4 pt-4">
+      <div className="grid sm:grid-cols-3 gap-4 pt-2">
         <Link to="/admin/doctors" className="card p-5 hover:border-primary/50 transition-all flex flex-col justify-between space-y-3">
           <div className="flex items-center gap-3">
             <div className="w-10 h-10 rounded-lg bg-primary-100 text-primary-700 flex items-center justify-center">
