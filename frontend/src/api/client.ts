@@ -1,12 +1,13 @@
 import axios from 'axios';
 import type { AxiosError, InternalAxiosRequestConfig } from 'axios';
 
-const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:8080/api';
+const rawUrl = (import.meta.env.VITE_API_URL as string | undefined)?.trim();
+export const API_BASE_URL = rawUrl ? rawUrl.replace(/\/+$/, '') : 'http://localhost:8080/api';
 
 export const apiClient = axios.create({
   baseURL: API_BASE_URL,
   headers: { 'Content-Type': 'application/json' },
-  timeout: 15000,
+  timeout: 20000,
 });
 
 // ─── Request Interceptor — attach JWT ─────────────────────────────────────────

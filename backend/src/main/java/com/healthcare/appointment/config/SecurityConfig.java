@@ -35,8 +35,8 @@ public class SecurityConfig {
     private final JwtAuthFilter jwtAuthFilter;
     private final UserDetailsServiceImpl userDetailsService;
 
-    @Value("${app.frontend.url:http://localhost:5173}")
-    private String frontendUrl;
+    @Value("${app.cors.allowed-origins:${app.frontend.url:http://localhost:5173,http://localhost:3000}}")
+    private String allowedOrigins;
 
     @Bean
     public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
@@ -52,7 +52,7 @@ public class SecurityConfig {
                 .requestMatchers(HttpMethod.GET, "/api/doctors/{id}").permitAll()
                 .requestMatchers(HttpMethod.GET, "/api/doctors/{id}/availability").permitAll()
                 .requestMatchers("/api-docs/**", "/swagger-ui/**", "/swagger-ui.html").permitAll()
-                .requestMatchers("/actuator/health").permitAll()
+                .requestMatchers("/actuator/health", "/actuator/info").permitAll()
                 .requestMatchers("/api/calendar/callback").permitAll()
                 .requestMatchers(HttpMethod.GET, "/api/calendar/export/**").permitAll()
 
@@ -77,14 +77,23 @@ public class SecurityConfig {
     @Bean
     public CorsConfigurationSource corsConfigurationSource() {
         CorsConfiguration config = new CorsConfiguration();
-        config.setAllowedOrigins(List.of(frontendUrl));
-        config.setAllowedMethods(List.of("GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"));
+
+        // Split comma-separated allowed origins or patterns
+        List<String> origins = java.util.Arrays.stream(allowedOrigins.split(","))
+            .map(String::trim)
+            .filter(s -> !s.isEmpty())
+            .toList();
+
+        // Support exact origins and wildcard patterns (e.g. https://*.vercel.app)
+        config.setAllowedOriginPatterns(origins.isEmpty() ? List.of("*") : origins);
+        config.setAllowedMethods(List.of("GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS", "HEAD"));
         config.setAllowedHeaders(List.of("*"));
+        config.setExposedHeaders(List.of("Authorization", "Content-Disposition", "Content-Type"));
         config.setAllowCredentials(true);
         config.setMaxAge(3600L);
 
         UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();
-        source.registerCorsConfiguration("/api/**", config);
+        source.registerCorsConfiguration("/**", config);
         return source;
     }
 
