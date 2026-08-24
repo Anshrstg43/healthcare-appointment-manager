@@ -30,3 +30,4 @@ logs/
 **/.env
 **/credentials.json
 **/google-oauth-tokens/
+*.zip
