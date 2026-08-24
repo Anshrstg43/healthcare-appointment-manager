@@ -35,19 +35,20 @@ const LoginPage: React.FC = () => {
 
   const getDemoFallbackUser = (email: string): { user: User; role: Role } | null => {
     const normalized = email.toLowerCase().trim();
+    const now = new Date().toISOString();
     if (normalized === 'patient@healthcare.com') {
       return {
-        user: { id: 1, name: 'Alex Morgan', email: 'patient@healthcare.com', phone: '+1-555-0199', role: 'PATIENT', active: true },
+        user: { id: 1, name: 'Alex Morgan', email: 'patient@healthcare.com', phone: '+1-555-0199', role: 'PATIENT', active: true, createdAt: now },
         role: 'PATIENT',
       };
     } else if (normalized === 'dr.jenkins@healthcare.com') {
       return {
-        user: { id: 2, name: 'Dr. Sarah Jenkins', email: 'dr.jenkins@healthcare.com', phone: '+1-555-0101', role: 'DOCTOR', active: true },
+        user: { id: 2, name: 'Dr. Sarah Jenkins', email: 'dr.jenkins@healthcare.com', phone: '+1-555-0101', role: 'DOCTOR', active: true, createdAt: now },
         role: 'DOCTOR',
       };
     } else if (normalized === 'admin@healthcare.com') {
       return {
-        user: { id: 3, name: 'Clinic Administrator', email: 'admin@healthcare.com', phone: '+1-555-0000', role: 'ADMIN', active: true },
+        user: { id: 3, name: 'Clinic Administrator', email: 'admin@healthcare.com', phone: '+1-555-0000', role: 'ADMIN', active: true, createdAt: now },
         role: 'ADMIN',
       };
     }
