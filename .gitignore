@@ -1,0 +1,32 @@
+# ─── Node / Frontend ──────────────────────────────────────────────────────────
+frontend/node_modules/
+frontend/dist/
+frontend/.env
+frontend/.env.local
+
+# ─── Java / Backend ───────────────────────────────────────────────────────────
+backend/target/
+backend/.env
+backend/.jdk/
+backend/apache-maven-*/
+backend/.maven/
+*.class
+*.jar
+*.war
+*.ear
+
+# ─── IDE ──────────────────────────────────────────────────────────────────────
+.idea/
+*.iml
+.vscode/
+.DS_Store
+Thumbs.db
+
+# ─── Logs ─────────────────────────────────────────────────────────────────────
+*.log
+logs/
+
+# ─── Secrets (NEVER commit these) ────────────────────────────────────────────
+**/.env
+**/credentials.json
+**/google-oauth-tokens/

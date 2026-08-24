@@ -1,0 +1,10 @@
+package com.healthcare.appointment.entity;
+
+public enum NotificationType {
+    APPOINTMENT_CONFIRMATION,
+    APPOINTMENT_REMINDER,
+    APPOINTMENT_CANCELLATION,
+    APPOINTMENT_RESCHEDULED,
+    DOCTOR_LEAVE_IMPACT,
+    MEDICATION_REMINDER
+}

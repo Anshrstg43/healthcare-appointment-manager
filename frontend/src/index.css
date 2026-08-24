@@ -1,0 +1,153 @@
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* ─── Base Reset & Typography ────────────────────────────────────────────── */
+@layer base {
+  *, *::before, *::after { box-sizing: border-box; }
+
+  :root {
+    --radius: 0.625rem;
+    scroll-behavior: smooth;
+  }
+
+  body {
+    @apply bg-background text-foreground font-sans antialiased;
+    min-height: 100vh;
+  }
+
+  h1 { @apply text-3xl font-bold tracking-tight; }
+  h2 { @apply text-2xl font-semibold tracking-tight; }
+  h3 { @apply text-xl font-semibold; }
+  h4 { @apply text-lg font-medium; }
+
+  a { @apply text-primary-500 hover:text-primary-600 transition-colors; }
+
+  input, textarea, select {
+    @apply outline-none focus:ring-2 focus:ring-primary-500/30 focus:border-primary-500 transition-all duration-150;
+  }
+}
+
+/* ─── Component Utilities ────────────────────────────────────────────────── */
+@layer components {
+
+  /* Card */
+  .card {
+    @apply bg-card rounded-lg shadow-card border border-border p-6 transition-shadow duration-200;
+  }
+  .card:hover {
+    @apply shadow-md;
+  }
+
+  /* Buttons */
+  .btn {
+    @apply inline-flex items-center justify-center gap-2 px-4 py-2 text-sm font-medium
+           rounded-md transition-all duration-150 disabled:opacity-50 disabled:cursor-not-allowed
+           focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring;
+  }
+  .btn-primary {
+    @apply btn bg-primary text-primary-foreground hover:bg-primary-600 active:scale-[0.98];
+  }
+  .btn-secondary {
+    @apply btn bg-muted text-foreground hover:bg-border;
+  }
+  .btn-outline {
+    @apply btn border border-border bg-transparent hover:bg-muted;
+  }
+  .btn-danger {
+    @apply btn bg-destructive text-destructive-foreground hover:bg-red-600 active:scale-[0.98];
+  }
+  .btn-ghost {
+    @apply btn hover:bg-muted text-muted-foreground hover:text-foreground;
+  }
+  .btn-sm { @apply btn px-3 py-1.5 text-xs; }
+  .btn-lg { @apply btn px-6 py-3 text-base; }
+
+  /* Input */
+  .input {
+    @apply w-full px-3 py-2 text-sm border border-input rounded-md bg-card
+           placeholder:text-muted-foreground focus:ring-2 focus:ring-primary-500/20
+           focus:border-primary-500 transition-all duration-150;
+  }
+  .input-error {
+    @apply border-destructive focus:ring-destructive/20 focus:border-destructive;
+  }
+
+  /* Label */
+  .label {
+    @apply block text-sm font-medium text-foreground mb-1.5;
+  }
+
+  /* Form group */
+  .field { @apply space-y-1.5; }
+  .field-error { @apply text-xs text-destructive mt-1; }
+
+  /* Badge */
+  .badge {
+    @apply inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium;
+  }
+  .badge-primary   { @apply badge bg-primary-100 text-primary-700; }
+  .badge-success   { @apply badge bg-green-100 text-green-700; }
+  .badge-warning   { @apply badge bg-amber-100 text-amber-700; }
+  .badge-danger    { @apply badge bg-red-100 text-red-700; }
+  .badge-muted     { @apply badge bg-muted text-muted-foreground; }
+  .badge-purple    { @apply badge bg-purple-100 text-purple-700; }
+
+  /* Status badges for appointment states */
+  .status-CONFIRMED   { @apply badge bg-primary-100 text-primary-700; }
+  .status-COMPLETED   { @apply badge bg-green-100 text-green-700; }
+  .status-CANCELLED   { @apply badge bg-red-100 text-red-700; }
+  .status-HELD        { @apply badge bg-purple-100 text-purple-700; }
+  .status-AVAILABLE   { @apply badge bg-muted text-muted-foreground; }
+  .status-RESCHEDULED { @apply badge bg-amber-100 text-amber-700; }
+
+  /* Skeleton loader */
+  .skeleton {
+    @apply rounded-md bg-gradient-to-r from-muted via-border to-muted;
+    background-size: 400% 100%;
+    animation: skeleton 1.5s ease-in-out infinite;
+  }
+
+  /* Divider */
+  .divider { @apply border-t border-border my-4; }
+
+  /* Page wrapper */
+  .page { @apply max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8; }
+  .page-header { @apply mb-8; }
+  .page-title  { @apply text-2xl font-bold text-foreground; }
+  .page-subtitle { @apply text-sm text-muted-foreground mt-1; }
+
+  /* Stat card */
+  .stat-card {
+    @apply card flex flex-col gap-1;
+  }
+  .stat-value { @apply text-3xl font-bold text-foreground; }
+  .stat-label { @apply text-sm text-muted-foreground; }
+
+  /* Table */
+  .table-wrapper { @apply overflow-x-auto rounded-lg border border-border; }
+  .table { @apply w-full text-sm; }
+  .table thead { @apply bg-muted; }
+  .table th { @apply px-4 py-3 text-left font-medium text-muted-foreground; }
+  .table td { @apply px-4 py-3 border-t border-border text-foreground; }
+  .table tr:hover td { @apply bg-muted/40; }
+
+  /* Sidebar nav */
+  .nav-item {
+    @apply flex items-center gap-3 px-3 py-2.5 rounded-md text-sm font-medium
+           text-muted-foreground hover:bg-primary-50 hover:text-primary-700
+           transition-all duration-150 cursor-pointer;
+  }
+  .nav-item.active {
+    @apply bg-primary-50 text-primary-700 font-semibold;
+  }
+
+  /* Alert banner */
+  .alert { @apply p-4 rounded-lg border text-sm; }
+  .alert-info    { @apply alert bg-primary-50 border-primary-200 text-primary-800; }
+  .alert-success { @apply alert bg-green-50 border-green-200 text-green-800; }
+  .alert-warning { @apply alert bg-amber-50 border-amber-200 text-amber-800; }
+  .alert-danger  { @apply alert bg-red-50 border-red-200 text-red-800; }
+}
