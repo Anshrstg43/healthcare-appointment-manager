@@ -13,15 +13,17 @@ An enterprise-grade, full-stack, AI-assisted healthcare appointment management a
 
 ## 📑 Table of Contents
 1. [Architecture Overview](#-architecture-overview)
-2. [Key Persona Features](#-key-persona-features)
-3. [AI Engine & Red-Flag Emergency Triage](#-ai-engine--red-flag-emergency-triage)
-4. [Double-Booking Prevention (Pessimistic Locking)](#-double-booking-prevention-pessimistic-locking)
-5. [Calendar Synchronization & .ics Export](#-calendar-synchronization--ics-export)
-6. [Pre-Seeded Demo Credentials](#-pre-seeded-demo-credentials)
-7. [Quick Start & Running Locally](#-quick-start--running-locally)
-8. [Docker Compose Deployment](#-docker-compose-deployment)
-9. [REST API Documentation](#-rest-api-documentation)
-10. [Automated Testing & CI/CD](#-automated-testing--cicd)
+2. [Database Schema & Entity Relationship](#-database-schema--entity-relationship)
+3. [Key Persona Features](#-key-persona-features)
+4. [LLM Prompts & AI Integration](#-llm-prompts--ai-integration)
+5. [Double-Booking Prevention (Pessimistic Locking)](#-double-booking-prevention-pessimistic-locking)
+6. [Google Calendar & .ics Export Setup](#-google-calendar--ics-export-setup)
+7. [System Design Highlights](#-system-design-highlights)
+8. [Pre-Seeded Demo Credentials](#-pre-seeded-demo-credentials)
+9. [Quick Start & Running Locally](#-quick-start--running-locally)
+10. [Docker Compose Deployment](#-docker-compose-deployment)
+11. [REST API Documentation](#-rest-api-documentation)
+12. [Automated Testing & CI/CD](#-automated-testing--cicd)
 
 ---
 
@@ -61,60 +63,90 @@ graph TD
 
 ---
 
-## 🌟 Key Persona Features
+## 🗄️ Database Schema & Entity Relationship
 
-### 👤 1. Patient Portal
-* **Live Slot Picker:** Dynamic real-time slot generation considering doctor working hours, 15–60 min slot durations, blackout leaves, and active bookings.
-* **Red-Flag Emergency Warning:** Live symptom scanner that triggers high-urgency alerts and advises immediate 911/emergency care when red-flag keywords are entered.
-* **Pre-Visit AI Summary:** Automatically categorizes chief complaint, urgency level (`LOW`, `MEDIUM`, `HIGH`), and prepares tailored diagnostic questions for the doctor.
-* **Universal Calendar Integration:** One-click Google Calendar sync and standard RFC 5545 `.ics` download for Apple Calendar, Outlook, and offline calendars.
-* **Daily Medication Checklist:** Adherence tracker displaying morning, afternoon, and night doses with completion tracking.
-* **Virtual Telehealth Consultation:** In-browser consultation room with simulated HD video, mic/camera toggles, and live clinical chat.
-* **Medical Profile & Printable Prescriptions:** Blood group, allergies, chronic conditions manager + printable clinic prescription view with digital signature badge.
+Managed automatically via Flyway database migrations (`V1__initial_schema.sql`):
 
-### 🩺 2. Doctor Portal
-* **Clinical Agenda:** Real-time today's appointment queue and upcoming schedules.
-* **Intake Briefing:** Instant access to patient's chief complaint, AI pre-visit questions, and urgency badge prior to consultation.
-* **Clinical Notes & Prescription Builder:** Record objective medical notes and prescribe medications with 1-click presets (Amoxicillin, Paracetamol, Cetirizine, Omeprazole, Metformin).
-* **AI Post-Visit Summary:** Automatically translates clinical notes and prescription regimens into plain, patient-friendly guidance and clear medication schedules.
-* **Clinical Analytics:** Weekly patient load bar chart and consultation status distribution donut chart.
+```mermaid
+erDiagram
+    USERS ||--o| PATIENTS : "has profile"
+    USERS ||--o| DOCTORS : "has profile"
+    DOCTORS ||--o{ DOCTOR_LEAVES : "has leaves"
+    DOCTORS ||--o{ APPOINTMENTS : "conducts"
+    PATIENTS ||--o{ APPOINTMENTS : "books"
+    APPOINTMENTS ||--o| PRESCRIPTIONS : "contains"
+    PRESCRIPTIONS ||--o{ PRESCRIPTION_ITEMS : "has medicines"
+    APPOINTMENTS ||--o{ AI_SUMMARIES : "has pre/post summaries"
+    PATIENTS ||--o{ MEDICATION_REMINDERS : "receives"
+    USERS ||--o{ NOTIFICATIONS : "receives"
 
-### 🛡️ 3. Clinic Admin Portal
-* **Operational KPI Dashboard:** High-level metrics for registered patients, active doctors, today's appointments, upcoming bookings, and cancellations.
-* **Doctor Roster Management:** Onboard doctors, customize slot durations (15/20/30/45/60 min), toggle active status, and configure day-by-day start/end working hours.
-* **Doctor Leave Engine:** Set leave dates with automatic cascade cancellations of conflicting bookings, automated patient email notifications, and calendar sync updates.
-* **Visual Intelligence:** Interactive weekly booking trend bar charts and specialty distribution donut charts.
+    USERS {
+        bigint id PK
+        varchar name
+        varchar email UK
+        varchar password_hash
+        varchar role "PATIENT | DOCTOR | ADMIN"
+        boolean active
+    }
+
+    DOCTORS {
+        bigint id PK
+        bigint user_id FK
+        varchar specialization
+        json working_schedule
+        int slot_duration_minutes
+        boolean active
+    }
+
+    APPOINTMENTS {
+        bigint id PK
+        bigint patient_id FK
+        bigint doctor_id FK
+        date appointment_date
+        time start_time
+        time end_time
+        varchar status "HELD | CONFIRMED | COMPLETED | CANCELLED"
+        text symptoms_text
+        text clinical_notes
+        timestamp hold_expires_at
+    }
+```
 
 ---
 
-## 🚨 AI Engine & Red-Flag Emergency Triage
+## 🤖 LLM Prompts & AI Integration
 
-```mermaid
-sequenceDiagram
-    autonumber
-    actor Patient
-    participant Frontend
-    participant Backend as AppointmentService
-    participant AI as AiSummaryService
-    actor Doctor
+The platform leverages OpenAI GPT-4o with graceful heuristic fallback when unconfigured.
 
-    Patient->>Frontend: Enters symptoms (e.g. "Severe chest pain radiating to left arm")
-    Frontend->>Frontend: Live Regex Safety Check shows Red-Flag Alert
-    Patient->>Backend: Submits Booking Request
-    Backend->>AI: Generate Pre-Visit Summary Async
-    AI->>AI: Emergency Triage: Tags HIGH urgency & Alert Banner
-    AI->>Doctor: Delivers Chief Complaint + Diagnostic Evaluation Questions
-    Note over Doctor: Doctor completes consultation & prescribes Rx
-    Doctor->>Backend: Mark Consultation COMPLETED
-    Backend->>AI: Generate Post-Visit Summary Async
-    AI->>Patient: Patient-friendly visit summary & medication regimen
+### 1. Pre-Visit Intake & Triage Prompt
+```text
+You are a clinical AI triage assistant.
+Analyze these symptoms and return:
+1. Urgency level: LOW, MEDIUM, or HIGH (set to HIGH if acute chest pain, dyspnea, stroke signs, or severe distress are present)
+2. Chief complaint (concise 3-5 word summary)
+3. Three suggested diagnostic questions for the examining doctor.
+
+Symptoms: <symptoms>
+```
+
+### 2. Post-Visit Patient Guidance Prompt
+```text
+You are a patient communication specialist.
+Convert these clinical notes and prescribed medications into a clear, patient-friendly summary (6th-grade reading level) with:
+1. Overview of diagnosis and findings
+2. Clear daily medication schedule with instructions
+3. Warning signs and when to seek immediate medical attention
+4. Follow-up instructions
+
+Clinical Notes: <notes>
+Prescription Details: <prescriptions>
 ```
 
 ---
 
 ## 🔒 Double-Booking Prevention (Pessimistic Locking)
 
-To prevent simultaneous double-booking of the same slot under high concurrent traffic, `AppointmentRepository` enforces database-level row write locks:
+To prevent simultaneous double-booking of the same doctor slot under concurrent traffic, `AppointmentRepository` acquires row-level write locks:
 
 ```java
 @Lock(LockModeType.PESSIMISTIC_WRITE)
@@ -128,7 +160,33 @@ List<Appointment> findActiveOverlappingAppointmentsForUpdate(
 );
 ```
 
-If a slot is already held or confirmed by another transaction, the second transaction is immediately rejected with a `409 Conflict` error (`SLOT_UNAVAILABLE`).
+If another transaction attempts to hold or book the same slot, it is blocked until the first commits, and is subsequently rejected with HTTP `409 Conflict` (`SLOT_UNAVAILABLE`).
+
+---
+
+## 📅 Google Calendar & .ics Export Setup
+
+### 1. Google Calendar OAuth 2.0 Integration
+1. Create a project in [Google Cloud Console](https://console.cloud.google.com/).
+2. Enable **Google Calendar API**.
+3. Create an **OAuth 2.0 Client ID** (Web application).
+4. Set Authorized Redirect URI to `http://localhost:8080/api/calendar/callback`.
+5. Populate `GOOGLE_CLIENT_ID` and `GOOGLE_CLIENT_SECRET` in `.env`.
+6. When an appointment is booked, rescheduled, or cancelled, Google Calendar events are automatically synced in both patient and doctor calendars.
+
+### 2. Universal RFC 5545 `.ics` Export (No API Keys Required)
+* A compliant `.ics` calendar invitation file is downloadable via `GET /api/calendar/export/{appointmentId}`.
+* Supported out-of-the-box on Apple Calendar, Outlook, and mobile calendar apps with 30-minute reminder alarms.
+
+---
+
+## 📐 System Design Highlights
+
+A comprehensive 800-word system design write-up is available in **[SYSTEM_DESIGN.md](SYSTEM_DESIGN.md)** covering:
+1. **Double-booking prevention:** Row-level pessimistic write locking + transaction isolation.
+2. **Doctor leave conflict handling:** Atomic cascading cancellations, patient email dispatch, and Google Calendar event deletion.
+3. **Slot hold mechanism:** 15-minute lease with automated background expiration cron.
+4. **Notification failure handling:** Outbox queue with exponential retry backoff.
 
 ---
 
@@ -136,7 +194,7 @@ If a slot is already held or confirmed by another transaction, the second transa
 
 | Role | Email | Password | Pre-configured Data |
 |---|---|---|---|
-| **Patient** | `patient@healthcare.com` | `Patient@123456` | Active bookings, pre-visit summary, medication schedule |
+| **Patient** | `patient@healthcare.com` | `Patient@123456` | Active bookings, AI triage pre-visit summary, medication schedule |
 | **Doctor** | `dr.jenkins@healthcare.com` | `Doctor@123456` | Cardiology specialist, consultation queue, clinical notes |
 | **Doctor** | `dr.chen@healthcare.com` | `Doctor@123456` | Dermatology specialist |
 | **Admin** | `admin@healthcare.com` | `Admin@123456` | Full clinic administration access & metrics |
@@ -151,27 +209,11 @@ If a slot is already held or confirmed by another transaction, the second transa
 * **MySQL 8.0** running locally on port `3306` (Database: `healthcare_db`, User: `root`, Password: `root`)
 
 ### One-Command Runner
-Execute the included root script to automatically build and launch both Backend (`:8080`) and Frontend (`:5173`):
 ```bash
 ./run.sh
 ```
-
-### Manual Launch
-
-#### 1. Backend (Spring Boot 3)
-```bash
-cd backend
-mvn clean spring-boot:run
-```
-*API runs on `http://localhost:8080` (Swagger UI: `http://localhost:8080/swagger-ui.html`)*
-
-#### 2. Frontend (React + Vite)
-```bash
-cd frontend
-npm install
-npm run dev
-```
-*Application runs on `http://localhost:5173`*
+* Backend API runs on `http://localhost:8080` (Swagger UI: `http://localhost:8080/swagger-ui.html`)
+* Frontend runs on `http://localhost:5173`
 
 ---
 
@@ -182,8 +224,8 @@ Run the complete full-stack environment (MySQL 8.0 + Spring Boot 3 + React/Nginx
 ```bash
 docker compose up --build
 ```
-* Access the web application at `http://localhost` or `http://localhost:5173`.
-* Access the backend REST API at `http://localhost:8080`.
+* Web Application: `http://localhost` or `http://localhost:5173`
+* Backend API: `http://localhost:8080`
 
 ---
 
@@ -222,7 +264,7 @@ docker compose up --build
 
 ## 🧪 Automated Testing & CI/CD
 
-Run the automated backend test suite (covering availability slot calculations, double booking locks, leave cascade cancellations, and prescription reminders):
+Run the automated backend test suite:
 
 ```bash
 cd backend
