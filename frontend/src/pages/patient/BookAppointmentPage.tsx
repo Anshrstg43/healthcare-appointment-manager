@@ -342,6 +342,20 @@ const BookAppointmentPage: React.FC = () => {
               placeholder="Please describe any symptoms, how long you've had them, and any questions you have for the doctor..."
               className="input resize-none"
             />
+
+            {/* Live Emergency Red-Flag Warning Banner */}
+            {/chest pain|shortness of breath|difficulty breathing|stroke|loss of consciousness|anaphylaxis|severe bleeding/i.test(symptomsText) && (
+              <div className="p-3 bg-red-50 border border-red-200 rounded-lg flex items-start gap-2.5 text-red-800 animate-slide-up">
+                <AlertTriangle className="w-5 h-5 text-red-600 flex-shrink-0 mt-0.5" />
+                <div className="text-xs">
+                  <div className="font-bold">⚠️ Urgent Medical Safety Alert</div>
+                  <div>
+                    You have entered symptoms that may indicate a medical emergency. If you are experiencing acute chest pain, severe shortness of breath, or neurological changes, please call <strong>911 / emergency services</strong> or visit the nearest emergency room immediately.
+                  </div>
+                </div>
+              </div>
+            )}
+
             <p className="text-[11px] text-muted-foreground">
               Our secure AI administrative assistant will summarize these symptoms to help your doctor prepare for your consultation.
             </p>

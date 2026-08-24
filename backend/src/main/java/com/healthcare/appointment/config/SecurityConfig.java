@@ -54,6 +54,7 @@ public class SecurityConfig {
                 .requestMatchers("/api-docs/**", "/swagger-ui/**", "/swagger-ui.html").permitAll()
                 .requestMatchers("/actuator/health").permitAll()
                 .requestMatchers("/api/calendar/callback").permitAll()
+                .requestMatchers(HttpMethod.GET, "/api/calendar/export/**").permitAll()
 
                 // Patient endpoints
                 .requestMatchers("/api/appointments/**").hasAnyRole("PATIENT", "ADMIN")

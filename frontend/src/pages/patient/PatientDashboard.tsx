@@ -107,7 +107,45 @@ const PatientDashboard: React.FC = () => {
         </div>
       )}
 
-      {/* Upcoming Appointments List */}
+      {/* Daily Medication Tracker */}
+      <div className="card space-y-4 border-primary/20">
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-2">
+            <span className="text-lg">💊</span>
+            <div>
+              <h3 className="font-bold text-sm text-foreground">Today's Medication Schedule</h3>
+              <p className="text-[11px] text-muted-foreground">Track daily prescribed doses and maintain adherence</p>
+            </div>
+          </div>
+          <span className="badge badge-success text-[11px]">80% Adherence</span>
+        </div>
+
+        <div className="grid sm:grid-cols-3 gap-3">
+          {[
+            { time: 'Morning (08:00 AM)', name: 'Omeprazole 20mg', inst: 'Before breakfast', taken: true },
+            { time: 'Afternoon (01:00 PM)', name: 'Amoxicillin 500mg', inst: 'After lunch with water', taken: true },
+            { time: 'Night (09:00 PM)', name: 'Cetirizine 10mg', inst: 'Before bedtime', taken: false },
+          ].map((med, idx) => (
+            <div
+              key={idx}
+              className={`p-3 rounded-lg border text-xs space-y-1.5 transition-all ${
+                med.taken ? 'bg-emerald-50/50 border-emerald-200 text-emerald-950' : 'bg-card border-border hover:border-primary/40'
+              }`}
+            >
+              <div className="flex items-center justify-between">
+                <span className="font-semibold text-primary text-[10px] uppercase">{med.time}</span>
+                <span className={`text-[10px] px-1.5 py-0.5 rounded font-medium ${med.taken ? 'bg-emerald-100 text-emerald-800' : 'bg-amber-100 text-amber-800'}`}>
+                  {med.taken ? '✓ Taken' : 'Pending'}
+                </span>
+              </div>
+              <div className="font-bold text-foreground">{med.name}</div>
+              <div className="text-muted-foreground text-[11px]">{med.inst}</div>
+            </div>
+          ))}
+        </div>
+      </div>
+
+      {/* Upcoming Appointments Section */}
       <div className="space-y-4">
         <div className="flex items-center justify-between">
           <h2 className="text-lg font-semibold text-foreground">Upcoming Consultations</h2>

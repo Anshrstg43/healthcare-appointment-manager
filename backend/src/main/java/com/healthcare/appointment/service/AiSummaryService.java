@@ -36,6 +36,12 @@ public class AiSummaryService {
     @Value("${app.ai.timeout-seconds:30}")
     private int timeoutSeconds;
 
+    private static final List<String> EMERGENCY_KEYWORDS = List.of(
+        "chest pain", "shortness of breath", "difficulty breathing", "stroke",
+        "paralysis", "loss of consciousness", "anaphylaxis", "severe bleeding",
+        "heart attack", "crushing chest", "unresponsive", "blue lips"
+    );
+
     /**
      * Asynchronously generates Pre-Visit AI summary from patient symptoms.
      * Guaranteed non-blocking and safe against LLM failures.
@@ -62,17 +68,22 @@ public class AiSummaryService {
         summary = aiSummaryRepository.save(summary);
 
         try {
-            String prompt = buildPreVisitPrompt(symptomsText);
+            boolean hasEmergencyKeyword = checkEmergencyRedFlags(symptomsText);
+            String prompt = buildPreVisitPrompt(symptomsText, hasEmergencyKeyword);
             String aiResponse = callOpenAi(prompt);
 
             // Parse structured JSON output
             JsonNode root = objectMapper.readTree(aiResponse);
-            String urgencyStr = root.path("urgency").asText("MEDIUM").toUpperCase();
+            String urgencyStr = root.path("urgency").asText(hasEmergencyKeyword ? "HIGH" : "MEDIUM").toUpperCase();
             UrgencyLevel urgency;
             try {
                 urgency = UrgencyLevel.valueOf(urgencyStr);
             } catch (Exception e) {
-                urgency = UrgencyLevel.MEDIUM;
+                urgency = hasEmergencyKeyword ? UrgencyLevel.HIGH : UrgencyLevel.MEDIUM;
+            }
+
+            if (hasEmergencyKeyword) {
+                urgency = UrgencyLevel.HIGH;
             }
 
             String chiefComplaint = root.path("chiefComplaint").asText("Symptom evaluation");
@@ -82,10 +93,15 @@ public class AiSummaryService {
                 questionsNode.forEach(q -> questions.add(q.asText()));
             }
 
+            String summaryText = root.path("summary").asText("");
+            if (hasEmergencyKeyword) {
+                summaryText = "⚠️ CRITICAL RED-FLAG ALERT: Patient reported emergency-level symptoms (" + chiefComplaint + "). Immediate clinical attention or emergency dispatch is advised.\n\n" + summaryText;
+            }
+
             summary.setUrgency(urgency);
             summary.setChiefComplaint(chiefComplaint);
             summary.setSuggestedQuestions(objectMapper.writeValueAsString(questions));
-            summary.setSummaryText(root.path("summary").asText(""));
+            summary.setSummaryText(summaryText);
             summary.setStatus(AiSummaryStatus.COMPLETED);
             summary.setErrorMessage(null);
 
@@ -146,6 +162,12 @@ public class AiSummaryService {
         }
     }
 
+    private boolean checkEmergencyRedFlags(String text) {
+        if (text == null) return false;
+        String lower = text.toLowerCase();
+        return EMERGENCY_KEYWORDS.stream().anyMatch(lower::contains);
+    }
+
     private String callOpenAi(String systemAndUserPrompt) {
         if (apiKey == null || apiKey.isBlank()) {
             log.warn("OPENAI_API_KEY is not set. Generating simulated AI response.");
@@ -183,7 +205,7 @@ public class AiSummaryService {
         throw new RuntimeException("Empty response received from OpenAI API");
     }
 
-    private String buildPreVisitPrompt(String symptoms) {
+    private String buildPreVisitPrompt(String symptoms, boolean isEmergency) {
         return """
             Analyze these patient-reported symptoms for administrative pre-visit intake.
             You must return a valid JSON object matching this exact schema:
@@ -198,6 +220,7 @@ public class AiSummaryService {
               "summary": "Brief 1-2 sentence intake overview."
             }
             
+            """ + (isEmergency ? "CRITICAL: Patient exhibits potential high-risk emergency red-flag symptoms. Mark urgency as HIGH and include immediate safety notes.\n" : "") + """
             IMPORTANT: Do NOT diagnose or suggest medications.
             
             Patient Symptoms:
@@ -210,16 +233,31 @@ public class AiSummaryService {
             Return a valid JSON object with the key "summaryText".
             
             Include:
-            1. Overview of what was discussed
+            1. Overview of what was discussed in plain English
             2. Medication schedule exactly as prescribed by the doctor (do NOT change dosages or frequency)
-            3. Follow-up recommendations and precautions
+            3. Follow-up recommendations, dietary tips, and emergency warning signs
             
             Doctor Notes:
             """ + notes + "\n\nPrescription:\n" + prescription;
     }
 
     private String generateMockAiResponse(String prompt) {
+        boolean isEmergency = prompt.toLowerCase().contains("chest pain") || prompt.toLowerCase().contains("shortness of breath") || prompt.contains("CRITICAL");
         if (prompt.contains("suggestedQuestions")) {
+            if (isEmergency) {
+                return """
+                    {
+                      "urgency": "HIGH",
+                      "chiefComplaint": "Acute Chest / Respiratory Distress",
+                      "suggestedQuestions": [
+                        "When did the acute pain or shortness of breath start?",
+                        "Does the pain radiate to the arm, shoulder, or jaw?",
+                        "Are you experiencing dizziness, sweating, or nausea?"
+                      ],
+                      "summary": "Patient reported acute high-risk symptoms requiring prioritized physician review or immediate emergency care."
+                    }
+                    """;
+            }
             return """
                 {
                   "urgency": "MEDIUM",
@@ -235,7 +273,7 @@ public class AiSummaryService {
         } else {
             return """
                 {
-                  "summaryText": "## Consultation Summary\\n\\nYour doctor has reviewed your condition and provided a treatment plan.\\n\\n### Medication Instructions\\nPlease take all prescribed medications exactly according to the dosage and frequency instructions provided.\\n\\n### Next Steps\\nRest adequately, stay hydrated, and contact the clinic if symptoms worsen or do not improve within the expected duration."
+                  "summaryText": "## Consultation Summary\\n\\nYour physician has reviewed your condition and prescribed a targeted care plan.\\n\\n### Medication Instructions\\nPlease take all prescribed medications exactly according to the dosage and frequency instructions provided.\\n\\n### Follow-up & Precautions\\n- Maintain hydration and get plenty of rest.\\n- Follow specific dietary or lifestyle recommendations outlined by your doctor.\\n- If symptoms worsen or severe reactions occur, contact emergency care immediately."
                 }
                 """;
         }

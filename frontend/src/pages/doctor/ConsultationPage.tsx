@@ -324,19 +324,45 @@ const ConsultationPage: React.FC = () => {
 
       {/* Prescription Builder */}
       <div className="card space-y-4">
-        <div className="flex items-center justify-between">
-          <div className="flex items-center gap-2 font-bold text-sm text-foreground">
-            <Pill className="w-4 h-4 text-primary" />
-            <span>Prescription & Medication Schedule</span>
+        <div className="flex flex-col gap-3 pb-2 border-b border-border">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-2 font-bold text-sm text-foreground">
+              <Pill className="w-4 h-4 text-primary" />
+              <span>Prescription & Medication Schedule</span>
+            </div>
+            <button
+              type="button"
+              onClick={addMedicationRow}
+              className="btn-outline btn-sm gap-1 text-xs"
+            >
+              <Plus className="w-3.5 h-3.5" />
+              <span>Add Medicine</span>
+            </button>
           </div>
-          <button
-            type="button"
-            onClick={addMedicationRow}
-            className="btn-outline btn-sm gap-1 text-xs"
-          >
-            <Plus className="w-3.5 h-3.5" />
-            <span>Add Medicine</span>
-          </button>
+
+          {/* Quick-Add Medicine Presets */}
+          <div className="flex items-center gap-1.5 flex-wrap">
+            <span className="text-[11px] text-muted-foreground font-semibold">⚡ Quick Presets:</span>
+            {[
+              { name: 'Amoxicillin', dose: '500mg', freq: 'Three times daily', dur: '7 days', inst: 'Take after meals with plenty of water' },
+              { name: 'Paracetamol', dose: '650mg', freq: 'As needed (max 3/day)', dur: '5 days', inst: 'Take for fever or pain above 100°F' },
+              { name: 'Cetirizine', dose: '10mg', freq: 'Once daily (Night)', dur: '5 days', inst: 'Take before bedtime' },
+              { name: 'Omeprazole', dose: '20mg', freq: 'Once daily (Morning)', dur: '14 days', inst: 'Take 30 mins before breakfast' },
+              { name: 'Metformin', dose: '500mg', freq: 'Twice daily', dur: '30 days', inst: 'Take with morning and evening meals' }
+            ].map((p, idx) => (
+              <button
+                key={idx}
+                type="button"
+                onClick={() => setPrescriptionItems((prev) => [
+                  ...prev,
+                  { medicineName: p.name, dosage: p.dose, frequency: p.freq, duration: p.dur, instructions: p.inst }
+                ])}
+                className="px-2 py-0.5 rounded bg-primary-50 hover:bg-primary-100 border border-primary-200 text-primary-800 text-[10px] font-medium transition-colors cursor-pointer"
+              >
+                + {p.name} {p.dose}
+              </button>
+            ))}
+          </div>
         </div>
 
         {prescriptionItems.length === 0 ? (

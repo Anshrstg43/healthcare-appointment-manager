@@ -172,19 +172,26 @@ const AppointmentDetail: React.FC = () => {
           </div>
 
           <div className="p-3 bg-muted/40 rounded-lg space-y-1">
-            <span className="text-xs text-muted-foreground block flex items-center gap-1.5">
-              <CalendarCheck className="w-4 h-4 text-primary" /> Google Calendar
+            <span className="text-xs text-muted-foreground block flex items-center justify-between">
+              <span className="flex items-center gap-1.5"><CalendarCheck className="w-4 h-4 text-primary" /> Calendar</span>
+              <a
+                href={`/api/calendar/export/${appt.id}`}
+                download={`appointment-${appt.id}.ics`}
+                className="text-[10px] text-primary hover:underline font-semibold flex items-center gap-0.5"
+              >
+                📥 Download .ics
+              </a>
             </span>
             <div className="flex items-center justify-between">
               <span className={`text-xs font-semibold ${appt.calendarSynced ? 'text-success' : 'text-muted-foreground'}`}>
-                {appt.calendarSynced ? 'Synchronized' : 'Not Synced'}
+                {appt.calendarSynced ? 'Google Synced' : 'Offline / .ics Ready'}
               </span>
               <button
                 onClick={() => calendarSyncMutation.mutate()}
                 disabled={calendarSyncMutation.isPending}
                 className="text-[11px] text-primary hover:underline"
               >
-                Sync Now
+                Sync Google
               </button>
             </div>
           </div>
